@@ -10,10 +10,15 @@ const SpaceRunnerGame: React.FC = () => {
   const [isGameOver, setIsGameOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
 
+  // Explosion
+  const [showExplosion, setShowExplosion] = useState(false);
+  const explosionRef = useRef<{ x: number; y: number } | null>(null);
+  const explosionTimerRef = useRef<number>(0);
+
   const gravity = 1.5;
-  const jumpForce = 40; // Adjust jump force to make it more responsive
-  const baseGameSpeed = 6; // Base speed for obstacles
-  const gameSpeedMultiplier = 1.5; // Adjust game speed scaling
+  const jumpForce = 40;
+  const baseGameSpeed = 8;
+  const gameSpeedMultiplier = 1.8;
 
   let lastTimestamp = 0;
 
@@ -22,9 +27,10 @@ const SpaceRunnerGame: React.FC = () => {
     y: number;
     width: number;
     height: number;
-    type: 'rock' | 'monster';
+    type: 'rock' | 'monster' | 'meteor';
   }
 
+  // Images
   const astronautImg = new Image();
   astronautImg.src = 'astronaut-no-bg.svg';
 
@@ -34,8 +40,14 @@ const SpaceRunnerGame: React.FC = () => {
   const monsterImg = new Image();
   monsterImg.src = 'monster.svg';
 
+  const meteorImg = new Image();
+  meteorImg.src = 'meteor.svg';
+
   const backgroundImg = new Image();
   backgroundImg.src = 'space-bg.jpg';
+
+  const explosionImg = new Image();
+  explosionImg.src = 'explosion.svg';
 
   const handleRestart = () => {
     setIsGameOver(false);
@@ -43,6 +55,9 @@ const SpaceRunnerGame: React.FC = () => {
     astronautYRef.current = 500;
     astronautVelocityRef.current = 0;
     obstaclesRef.current = [];
+    setShowExplosion(false);
+    explosionRef.current = null;
+    explosionTimerRef.current = 0;
   };
 
   useEffect(() => {
@@ -52,7 +67,7 @@ const SpaceRunnerGame: React.FC = () => {
 
     let animationFrameId: number;
     let obstacleTimer = 0;
-    let nextObstacleTime = randomBetween(80, 140);
+    let nextObstacleTime = randomBetween(70, 120);
 
     function randomBetween(min: number, max: number) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -60,12 +75,14 @@ const SpaceRunnerGame: React.FC = () => {
 
     const spawnObstacle = () => {
       const fromTop = Math.random() < 0.5;
-      const obstacleType = Math.random() < 0.5 ? 'rock' : 'monster';
+      const obstacleType = Math.random() < 0.33 ? 'rock' : Math.random() < 0.5 ? 'monster' : 'meteor';
+      const obstacleHeight = 140;
+
       obstaclesRef.current.push({
         x: canvas.width,
-        y: fromTop ? 50 : 520,
-        width: 120,
-        height: 120,
+        y: fromTop ? 50 : canvas.height - obstacleHeight,
+        width: 140,
+        height: obstacleHeight,
         type: obstacleType,
       });
     };
@@ -76,13 +93,14 @@ const SpaceRunnerGame: React.FC = () => {
         isJumpingRef.current = false;
       }
 
-      astronautVelocityRef.current += gravity; // Gravity
+      astronautVelocityRef.current += gravity;
       astronautYRef.current += astronautVelocityRef.current;
 
       if (astronautYRef.current > 500) {
         astronautYRef.current = 500;
         astronautVelocityRef.current = 0;
       }
+
       if (astronautYRef.current < 0) {
         astronautYRef.current = 0;
         astronautVelocityRef.current = 0;
@@ -93,9 +111,13 @@ const SpaceRunnerGame: React.FC = () => {
 
     const handleObstacles = () => {
       obstaclesRef.current.forEach((obs, index) => {
-        obs.x -= baseGameSpeed * gameSpeedMultiplier; // Adjust speed scaling
+        obs.x -= baseGameSpeed * gameSpeedMultiplier;
 
-        const image = obs.type === 'rock' ? asteroidImg : monsterImg;
+        const image =
+          obs.type === 'rock' ? asteroidImg :
+          obs.type === 'monster' ? monsterImg :
+          meteorImg;
+
         ctx.drawImage(image, obs.x, obs.y, obs.width, obs.height);
 
         if (obs.x + obs.width < 0) {
@@ -125,8 +147,24 @@ const SpaceRunnerGame: React.FC = () => {
         ) {
           setFinalScore(scoreRef.current);
           setIsGameOver(true);
+          setShowExplosion(true);
+          explosionRef.current = {
+            x: 150,
+            y: astronautYRef.current,
+          };
+          explosionTimerRef.current = 30; // show for 30 frames
         }
       });
+    };
+
+    const drawExplosion = () => {
+      if (showExplosion && explosionRef.current && explosionTimerRef.current > 0) {
+        ctx.drawImage(explosionImg, explosionRef.current.x, explosionRef.current.y, 120, 120);
+        explosionTimerRef.current -= 1;
+        if (explosionTimerRef.current <= 0) {
+          setShowExplosion(false);
+        }
+      }
     };
 
     const drawScore = () => {
@@ -136,11 +174,10 @@ const SpaceRunnerGame: React.FC = () => {
     };
 
     const gameLoop = (timestamp: number) => {
-      const deltaTime = (timestamp - lastTimestamp) / 1000; // Convert to seconds
+      const deltaTime = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
       if (!isGameOver) {
@@ -151,11 +188,13 @@ const SpaceRunnerGame: React.FC = () => {
         if (obstacleTimer > nextObstacleTime) {
           spawnObstacle();
           obstacleTimer = 0;
-          nextObstacleTime = randomBetween(80, 140);
+          nextObstacleTime = randomBetween(70, 120);
         }
 
         drawScore();
       }
+
+      drawExplosion();
 
       animationFrameId = requestAnimationFrame(gameLoop);
     };
@@ -170,7 +209,7 @@ const SpaceRunnerGame: React.FC = () => {
 
     astronautImg.onload = () => {
       backgroundImg.onload = () => {
-        gameLoop(0); // Start the game loop
+        gameLoop(0);
       };
     };
 
