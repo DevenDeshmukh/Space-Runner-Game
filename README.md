@@ -34,7 +34,7 @@ npm start
 ```
 This will launch the game in your default web browser.
 
-##🎮 How to Play
+## 🎮 How to Play
 Press Space to make your astronaut jump.
 
 Avoid the asteroids and alien monsters coming at you.
@@ -43,7 +43,7 @@ The longer you survive, the faster the obstacles get!
 
 Your score is displayed at the top of the screen and increases with time.
 
-##Screenshots:
+## Screenshots:
 <img width="1440" alt="Screenshot 2025-04-30 at 3 07 54 PM" src="https://github.com/user-attachments/assets/b8bb0cd4-bd94-4f71-9cfe-812580776b8e" />
 <img width="1440" alt="Screenshot 2025-04-30 at 3 07 47 PM" src="https://github.com/user-attachments/assets/8d4a5ee6-73f0-498b-a6cd-be5589e9f830" />
 <img width="1440" alt="Screenshot 2025-04-30 at 3 07 05 PM" src="https://github.com/user-attachments/assets/1321adc8-4208-4ba3-afc7-713b3bc2f28b" />
